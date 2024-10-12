@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+	<script src="jcanvas.js"></script>
+	<script>
+		$(document).ready(function () {
+		$('canvas').drawArc({
+			fillStyle: '#000',
+			x: 100, y: 100,
+			radius: 50,
+			layer: true
+		});
+		$('canvas').drawText({
+		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 100, fontSize: '32pt', fontFamily: 'Verdana, sans-serif',
+		text: 'The French Military Game', layer: true,
+		mouseup: function(layer) {
+			showInstructions1();
+		  },
+		  mouseover: function(layer) {
+			$('canvas').css('cursor', 'pointer');
+		  },
+		  mouseout: function(layer) {
+			$('canvas').css('cursor', 'default');
+		  }
+	  });
+	});
+	</script>
+	<style>
+	body {
+	text-align: center;
+	}
+
+	canvas {
+	margin: auto;
+	display: block;
+	}
+	</style>
+</head>
+<body>
+	<canvas id="canvas" style="width:800px;height:600px;background-color: #323ee0;" width="800" height="600">
+	</canvas>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<html>
+<head>
+<title>Drag and Drop Demo</title>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="jcanvas.js"></script>
+</head>
+<body>
+Drag and Drop Demo
+<br />
+<canvas id="gameboard" width="500" height="500" style="border:1px solid #000000;"></canvas>
+<script>
+var canvas = $('#gameboard');
+var dots;
+let rectangles = [
+    { x: 50, y: 50, width: 100, height: 50, startX: 50, startY: 50 },
+    { x: 200, y: 50, width: 100, height: 50, startX: 200, startY: 50 },
+    { x: 350, y: 50, width: 100, height: 50, startX: 350, startY: 50 }
+];
+let isDragging = false;
+let draggedRect = null;
+
+$(document).ready(function () {
+    canvas = $('#gameboard');
+	dots = generateRandomDots(5);
+    draw();
+});
+
+function generateRandomDots(count) {
+    const dots = [];
+    for (let i = 0; i < count; i++) {
+		var xr = Math.random();
+		var yr = Math.random();
+		var cw = 500;
+		var ch = 500;
+
+        dots.push({
+            x: xr * (cw - 20) + 10,
+            y: yr * (ch - 20) + 10
+        });
+    }
+    return dots;
+}
+function getMousePos(canvas, evt) {
+    const rect = canvas[0].getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
+
+
+function draw() {
+    canvas.clearCanvas();
+    rectangles.forEach(rect => {
+        canvas.drawRect({
+            fillStyle: 'blue',
+            x: rect.x, y: rect.y,
+            width: rect.width, height: rect.height,
+            fromCenter: false,
+			draggable: true,
+			dragstop: function(layer) {
+				const dot = getDotInsideRect(this, dots);
+				if (dot) {
+					this.x = dot.x - this.width / 2;
+					this.y = dot.y - this.height / 2;
+				} else {
+					this.x = this.startX;
+					this.y = this.startY;
+				}
+            	//draw();
+			}
+        });
+    });
+    dots.forEach(dot => {
+        canvas.drawArc({
+            fillStyle: 'red',
+            x: dot.x, y: dot.y,
+            radius: 5
+        });
+    });
+}
+
+function isInsideRect(pos, rect) {
+    return pos.x > rect.x && pos.x < rect.x + rect.width && pos.y > rect.y && pos.y < rect.y + rect.height;
+}
+
+function getDotInsideRect(rect, dots) {
+    return dots.find(dot => dot.x > rect.x && dot.x < rect.x + rect.width && dot.y > rect.y && dot.y < rect.y + rect.height);
+}
+
+function onDrop(startX, startY, endX, endY) {
+    console.log(`Rectangle moved from (${startX}, ${startY}) to (${endX}, ${endY})`);
+}
+	</script>
+</body>
+</html>
