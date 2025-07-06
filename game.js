@@ -123,7 +123,7 @@ function showInstructions2() {
 	drawBoardOnly(180,60,100);
 	$('canvas').drawText({
 		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 340, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left', layer: true,
-		text: ' White wins the game by pinning the black piece so that black has no move. \n This usually occurs with black trapped at 11, but if black plays poorly it may \n be pinned at 5 or 7. Black wins by reaching 1 or by evading being pinned \n for 20 moves. White can always win if he plays correctly and does not make any \n mistakes, but if you want to resign just type 0,0.'
+		text: ' White wins the game by pinning the black piece so that black has no move. \n This usually occurs with black trapped at 11, but if black plays poorly it may \n be pinned at 5 or 7. Black wins by reaching 1 or by evading being pinned \n for 20 moves. White can always win if he plays correctly and does not make any \n mistakes, but you may resign by clicking the Resign button.'
 	  });
 	  $('canvas').drawText({
 		fillStyle: '#fff', strokeWidth: 2, 	x: 620, y: 440, fontSize: '13pt', fontFamily: 'Verdana, sans-serif',
