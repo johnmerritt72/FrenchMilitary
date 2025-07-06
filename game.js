@@ -11,6 +11,7 @@ var a = new Array(165).fill(0).map(() => new Array(11).fill(0));
 var b = 0;
 var draggedPiece = null;
 var dragStartNode = 0;
+var gameActive = false;
 var numOfMoves = 0;
 var s3=0;
 var m4=0;
@@ -28,7 +29,7 @@ validMoves = [
 	[0,0,0,0,0,1,1,0,0,2,0,2],
 	[0,0,0,0,0,0,1,0,2,0,2,2],
 	[0,0,0,0,0,0,1,1,0,2,0,2],
-	[0,0,0,0,0,0,0,0,2,2,2,0]
+	[0,0,0,0,0,0,0,0,0,0,0,0]
 ];
 
 var l1 = 0;
@@ -98,7 +99,7 @@ function drawIntroScreen() {
 
 function showInstructions1() {
 	clearboard();
-	drawBoard(180,60,100);
+	drawBoardOnly(180,60,100);
 	$('canvas').drawText({
 		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 340, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left', layer: true,
 		text: ' The playing field for the French Military game is shown above. You will \n play white and will start with three men located at 1, 2, and 4. Black has \n only one man, which starts at 6. White has the first move and may move any one \n piece one space. White may only move up, down, or to the right. Black may move \n in any direction. No piece may move to a space occupied by another piece.'
@@ -119,7 +120,7 @@ function showInstructions1() {
 
 function showInstructions2() {
 	clearboard();
-	drawBoard(180,60,100);
+	drawBoardOnly(180,60,100);
 	$('canvas').drawText({
 		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 340, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left', layer: true,
 		text: ' White wins the game by pinning the black piece so that black has no move. \n This usually occurs with black trapped at 11, but if black plays poorly it may \n be pinned at 5 or 7. Black wins by reaching 1 or by evading being pinned \n for 20 moves. White can always win if he plays correctly and does not make any \n mistakes, but if you want to resign just type 0,0.'
@@ -140,7 +141,7 @@ function showInstructions2() {
 
 function showInstructions3() {
 	clearboard();
-	drawBoard(180,60,100);
+	drawBoardOnly(180,60,100);
 	$('canvas').drawText({
 		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 340, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left', layer: true,
 		text: ' The game is very easy to win the first few times it is played, but it \n will learn from its mistakes and become	increasingly more difficult to beat. \n The program stores what it has learned in an array, therefore \n the game gets increasingly difficult as time goes on.'
@@ -167,6 +168,7 @@ function startGame() {
 	w[3]=4;
 	numOfMoves=1;
 	s3 = CalcS3();
+	gameActive = true; // Enable dragging
 
 	drawBoard(180,60,100);
 }
@@ -179,6 +181,9 @@ function updateMove(fromNode, toNode) {
 		clearboard();
 		drawBoard(180,60,100);
 		if (numOfMoves > 19) {
+			gameActive = false; // Disable dragging BEFORE redrawing
+			clearboard();
+			drawBoard(180,60,100);
 			$('canvas').drawText({
 				fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 400, fontSize: '18pt', fontFamily: 'Verdana, sans-serif', align: 'left', 
 				layer: true, name: 'moveStr',
@@ -190,6 +195,9 @@ function updateMove(fromNode, toNode) {
 			s3 = CalcS3();
 			m4 = CalculateNextMove();
 			if (m4==0) {
+				gameActive = false; // Disable dragging BEFORE redrawing
+				clearboard();
+				drawBoard(180,60,100);
 				displayILost();
 				displayGameEndButtons();
 			} else {
@@ -200,6 +208,9 @@ function updateMove(fromNode, toNode) {
 				drawBoard(180,60,100,m4);
 				numOfMoves++;
 				if (b==1) {
+					gameActive = false; // Disable dragging BEFORE redrawing
+					clearboard();
+					drawBoard(180,60,100,m4);
 					displayIWin();
 					displayGameEndButtons();
 				}
@@ -391,22 +402,27 @@ function drawBoard(x, y, scale, lastMove = '') {
 			text: 'White pieces are at  ' + w[1] + '   ' + w[2] + '   ' + w[3] + '\nThe black piece is at  ' + b + '\nDrag a white piece to move it.' + lastMoveText
 		});
 		
-		// Add resign button
-		$('canvas').drawText({
-			fillStyle: '#ff4444', strokeWidth: 2, 	x: 120, y: 400, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', layer: true,
-			text: 'Resign', layer: true, 
-			name: 'resignButton',
-			mouseup: function(layer) {
-				displayIWin();
-				displayGameEndButtons();
-			},
-			mouseover: function(layer) {
-				$('canvas').css('cursor', 'pointer');
-			},
-			mouseout: function(layer) {
-				$('canvas').css('cursor', 'default');
-			}
-		});
+		// Add resign button only when game is active
+		if (gameActive) {
+			$('canvas').drawText({
+				fillStyle: '#ff4444', strokeWidth: 2, 	x: 120, y: 400, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', layer: true,
+				text: 'Resign', layer: true, 
+				name: 'resignButton',
+				mouseup: function(layer) {
+					gameActive = false; // Disable dragging
+					clearboard();
+					drawBoard(180,60,100);
+					displayIWin();
+					displayGameEndButtons();
+				},
+				mouseover: function(layer) {
+					$('canvas').css('cursor', 'pointer');
+				},
+				mouseout: function(layer) {
+					$('canvas').css('cursor', 'default');
+				}
+			});
+		}
 	}
 }
 
@@ -465,17 +481,16 @@ function drawGamePieces(x, y, scale) {
 		});
 	}
 	
-	// Draw white pieces (draggable)
+	// Draw white pieces (draggable only when game is active)
 	for(var i=1; i<=3; i++) {
 		if (w[i] > 0) {
-			$('canvas').drawRect({
+			var pieceConfig = {
 				fillStyle: '#fff', 
 				x: x+posx[w[i]-1]*scale, 
 				y: y+posy[w[i]-1]*scale, 
 				width: 40, 
 				height: 40, 
 				layer: true,
-				draggable: true,
 				name: 'whitePiece_' + i,
 				data: {
 					pieceIndex: i,
@@ -483,17 +498,22 @@ function drawGamePieces(x, y, scale) {
 					boardX: x,
 					boardY: y,
 					scale: scale
-				},
-				dragstart: function(layer) {
+				}
+			};
+			
+			// Only add drag functionality if game is active
+			if (gameActive) {
+				pieceConfig.draggable = true;
+				pieceConfig.dragstart = function(layer) {
 					draggedPiece = layer;
 					dragStartNode = layer.data.originalNode;
 					$(this).css('cursor', 'grabbing');
 					showValidMoves(dragStartNode, layer.data.boardX, layer.data.boardY, layer.data.scale);
-				},
-				drag: function(layer) {
+				};
+				pieceConfig.drag = function(layer) {
 					// Visual feedback during drag - valid moves are already shown
-				},
-				dragstop: function(layer) {
+				};
+				pieceConfig.dragstop = function(layer) {
 					// Hide valid move indicators
 					hideValidMoves();
 					
@@ -536,14 +556,16 @@ function drawGamePieces(x, y, scale) {
 					draggedPiece = null;
 					dragStartNode = 0;
 					$(this).css('cursor', 'grab');
-				},
-				mouseover: function() {
+				};
+				pieceConfig.mouseover = function() {
 					$(this).css('cursor', 'grab');
-				},
-				mouseout: function() {
+				};
+				pieceConfig.mouseout = function() {
 					$(this).css('cursor', 'default');
-				}
-			});
+				};
+			}
+			
+			$('canvas').drawRect(pieceConfig);
 			
 			// Draw node number on top of white piece
 			$('canvas').drawText({
@@ -627,4 +649,31 @@ function isValidMoveDestination(fromNode, toNode) {
 		return false;
 		
 	return true;
+}
+
+function drawBoardOnly(x, y, scale) {
+	// Draw board lines
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+0, y1: y+1*scale, x2: x+1*scale, y2: y+0, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+1*scale, y1: y+0, x2: x+2*scale, y2: y+0, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+2*scale, y1: y+0 , x2: x+3*scale, y2: y+0, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+3*scale, y1: y+0, x2: x+4*scale, y2: y+1*scale, layer: true });
+
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+0, y1: y+1*scale, x2: x+4*scale, y2: y+1*scale, layer: true });
+
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+0, y1: y+1*scale, x2: x+1*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+1*scale, y1: y+2*scale, x2: x+2*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+2*scale, y1: y+2*scale , x2: x+3*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+3*scale, y1: y+2*scale, x2: x+4*scale, y2: y+1*scale, layer: true });
+
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+1*scale, y1: y+0, x2: x+3*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+1*scale, y1: y+2*scale, x2: x+3*scale, y2: y+0, layer: true });
+
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+1*scale, y1: y+0, x2: x+1*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+2*scale, y1: y+0, x2: x+2*scale, y2: y+2*scale, layer: true });
+	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+3*scale, y1: y+0, x2: x+3*scale, y2: y+2*scale, layer: true });
+	
+	// Draw numbered positions only
+	for(var i=1;i<12;i++) {
+		drawPosNum(i, x, y, scale);
+	}
 }
