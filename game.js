@@ -9,8 +9,8 @@ var w = new Array(4);
 //var a = new Array(165,11);
 var a = new Array(165).fill(0).map(() => new Array(11).fill(0));
 var b = 0;
-var moveStr = '';
-var listenForKey = false;
+var draggedPiece = null;
+var dragStartNode = 0;
 var numOfMoves = 0;
 var s3=0;
 var m4=0;
@@ -169,86 +169,52 @@ function startGame() {
 	s3 = CalcS3();
 
 	drawBoard(180,60,100);
-	moveStr = '';
-	document.body.onkeydown = function(e){
-		if (listenForKey) {
-			if ((e.key >= '0' && e.key <= '9') || e.key == ',') {
-				moveStr += e.key;
-				drawMoveStr();
-			}
-			if (e.key == 'Backspace') {
-				moveStr = moveStr.substring(0,moveStr.length-1);
-				drawMoveStr();
-			}
-			if (e.key == 'Enter') {
-				updateMove();
-			}
-		}
-	};
-	listenForKey = true;
 }
 
-function updateMove() {
-	listenForKey = false;
-	$('canvas').removeLayer('moveStr');
-	$('canvas').drawLayers();
-	const myArray = moveStr.split(",");
-	if (moveStr == '0,0') {
-		displayIWin();``
-		displayGameEndButtons();
-	} else {
-		if (moveIsValid(myArray[0],myArray[1])) {
-			clearboard();
-			drawBoard(180,60,100);
-			if (numOfMoves > 19) {
-				$('canvas').drawText({
-					fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 400, fontSize: '18pt', fontFamily: 'Verdana, sans-serif', align: 'left', 
-					layer: true, name: 'moveStr',
-					text: 'That\'s 20 moves, ace, and you haven\'t trapped me.',  
-				});
-				displayIWin();
-				displayGameEndButtons();
-			} else {
-				s3 = CalcS3();
-				m4 = CalculateNextMove();
-				if (m4==0) {
-					displayILost();
-					displayGameEndButtons();
-				} else {
-					r[0][numOfMoves-1]=s3;
-					r[1][numOfMoves-1]=m4;
-					b=m4;
-					clearboard();
-					drawBoard(180,60,100,m4);
-					numOfMoves++;
-					if (b==1) {
-						displayIWin();
-						displayGameEndButtons();
-					} else {
-						listenForKey = true;
-					}
-				}
-			}
-		} else {
+function updateMove(fromNode, toNode) {
+	if (moveIsValid(fromNode, toNode)) {
+		// Execute the move
+		executeMoveUpdate(fromNode, toNode);
+		
+		clearboard();
+		drawBoard(180,60,100);
+		if (numOfMoves > 19) {
 			$('canvas').drawText({
 				fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 400, fontSize: '18pt', fontFamily: 'Verdana, sans-serif', align: 'left', 
 				layer: true, name: 'moveStr',
-				text: 'Foul !!!!! Click here to try again.',  
-				mouseup: function(layer) {
-					listenForKey = true;
-					$('canvas').removeLayer('moveStr');
-					$('canvas').drawLayers();
-				},
-				mouseover: function(layer) {
-				  $('canvas').css('cursor', 'pointer');
-				},
-				mouseout: function(layer) {
-				  $('canvas').css('cursor', 'default');
+				text: 'That\'s 20 moves, ace, and you haven\'t trapped me.',  
+			});
+			displayIWin();
+			displayGameEndButtons();
+		} else {
+			s3 = CalcS3();
+			m4 = CalculateNextMove();
+			if (m4==0) {
+				displayILost();
+				displayGameEndButtons();
+			} else {
+				r[0][numOfMoves-1]=s3;
+				r[1][numOfMoves-1]=m4;
+				b=m4;
+				clearboard();
+				drawBoard(180,60,100,m4);
+				numOfMoves++;
+				if (b==1) {
+					displayIWin();
+					displayGameEndButtons();
 				}
-			  });
+			}
 		}
+	} else {
+		// Invalid move - reset piece position
+		clearboard();
+		drawBoard(180,60,100);
+		$('canvas').drawText({
+			fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 400, fontSize: '18pt', fontFamily: 'Verdana, sans-serif', align: 'left', 
+			layer: true, name: 'moveStr',
+			text: 'Invalid move! Try again.',  
+		});
 	}
-	moveStr = '';
 }
 
 function displayIWin() {
@@ -349,33 +315,41 @@ function ResetArrays() {
 function moveIsValid(from, to) {
 	var isValidStart = false;
 	var j2 = 0;
-	if (from > 11 || to > 11)
+	if (from > 11 || to > 11 || from < 1 || to < 1)
 		return false;
+	
+	// Check if the 'from' position has a white piece
 	for(var i=1;i<=3;i++) {
-		j2 = i;
-		if (w[i]==from)
+		if (w[i]==from) {
+			isValidStart = true;
+			j2 = i;
 			break;
+		}
 	}
-	if(from == w[1] || from == w[2] || from == w[3])
-		isValidStart = true;
+	
+	if (!isValidStart)
+		return false;
+		
+	// Check if target position is occupied
 	if (to == b || to == w[1] || to == w[2] || to == w[3]) 
 		return false;
+		
+	// Check if move is valid according to game rules
 	if (validMoves[from][to] != 2)
 		return false;
-	w[j2] = to;
+		
 	return true;
 }
 
-function drawMoveStr() {
-	$('canvas').removeLayer('moveStr');
-	$('canvas').drawLayers();
-	$('canvas').drawText({
-		fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 400, fontSize: '18pt', fontFamily: 'Verdana, sans-serif', align: 'left', 
-		layer: true, name: 'moveStr',
-		text: moveStr
-	  });
+function executeMoveUpdate(from, to) {
+	// Find which white piece is moving and update its position
+	for(var i=1;i<=3;i++) {
+		if (w[i]==from) {
+			w[i] = to;
+			break;
+		}
+	}
 }
-
 
 function drawBoard(x, y, scale, lastMove = '') {
 
@@ -398,45 +372,259 @@ function drawBoard(x, y, scale, lastMove = '') {
 	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+2*scale, y1: y+0, x2: x+2*scale, y2: y+2*scale, layer: true });
 	$('canvas').drawLine({strokeStyle: '#FFF', strokeWidth: 3, x1: x+3*scale, y1: y+0, x2: x+3*scale, y2: y+2*scale, layer: true });
 	
-	var color = '';
-	var lastMoveText = '';
+	// Draw numbered positions
 	for(var i=1;i<12;i++) {
-		color = '';
-		if (i==b)
-			color = '#000';
-		if (i==w[1] || i==w[2] || i==w[3])
-			color = '#fff';
-		drawPosNum(i, x,y,scale, color);
+		drawPosNum(i, x, y, scale);
 	}
+	
+	// Draw game pieces
+	drawGamePieces(x, y, scale);
+	
+	// Draw status text
+	var lastMoveText = '';
 	if (b > 0) {
 		if (lastMove != null && lastMove > 0) {
 			lastMoveText = '\nI move to ' + lastMove;
 		}
 		$('canvas').drawText({
 			fillStyle: '#fff', strokeWidth: 2, 	x: 380, y: 340, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left', layer: true,
-			text: 'White pieces are at  ' + w[1] + '   ' + w[2] + '   ' + w[3] + '\nThe black piece is at  ' + b + '\nYour move, from-to X,Y ?' + lastMoveText
-		  });
+			text: 'White pieces are at  ' + w[1] + '   ' + w[2] + '   ' + w[3] + '\nThe black piece is at  ' + b + '\nDrag a white piece to move it.' + lastMoveText
+		});
+		
+		// Add resign button
+		$('canvas').drawText({
+			fillStyle: '#ff4444', strokeWidth: 2, 	x: 120, y: 400, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', layer: true,
+			text: 'Resign', layer: true, 
+			name: 'resignButton',
+			mouseup: function(layer) {
+				displayIWin();
+				displayGameEndButtons();
+			},
+			mouseover: function(layer) {
+				$('canvas').css('cursor', 'pointer');
+			},
+			mouseout: function(layer) {
+				$('canvas').css('cursor', 'default');
+			}
+		});
 	}
 }
 
-function drawPosNum(pos, x, y, scale, color) {
+function drawPosNum(pos, x, y, scale) {
 	var backcolor = '#323ee0';
 	var forecolor = '#fff';
 	var size = 20;
-	if (color != null && color != '') {
-		backcolor = color;
-		size = 40;
-	}
-	if (backcolor == '#fff')
-		forecolor = '#000';
-	$('canvas').drawRect({fillStyle: backcolor, x: x+posx[pos-1]*scale, y: y+posy[pos-1]*scale, width: size, height: size, layer: true });
+	
+	$('canvas').drawRect({
+		fillStyle: backcolor, 
+		x: x+posx[pos-1]*scale, 
+		y: y+posy[pos-1]*scale, 
+		width: size, 
+		height: size, 
+		layer: true,
+		name: 'node_' + pos
+	});
 	$('canvas').drawText({
-		fillStyle: forecolor, strokeWidth: 2, 	x: x+posx[pos-1]*scale, y: y+posy[pos-1]*scale, fontSize: '13pt', fontFamily: 'Verdana, sans-serif', align: 'left',
-		text: pos, layer: true
-	  });
+		fillStyle: forecolor, 
+		strokeWidth: 2, 	
+		x: x+posx[pos-1]*scale, 
+		y: y+posy[pos-1]*scale, 
+		fontSize: '13pt', 
+		fontFamily: 'Verdana, sans-serif', 
+		align: 'left',
+		text: pos, 
+		layer: true,
+		name: 'nodeText_' + pos
+	});
+}
+
+function drawGamePieces(x, y, scale) {
+	// Draw black piece
+	if (b > 0) {
+		$('canvas').drawRect({
+			fillStyle: '#000', 
+			x: x+posx[b-1]*scale, 
+			y: y+posy[b-1]*scale, 
+			width: 40, 
+			height: 40, 
+			layer: true,
+			name: 'blackPiece'
+		});
+		// Draw node number on top of black piece
+		$('canvas').drawText({
+			fillStyle: '#fff', 
+			strokeWidth: 2, 	
+			x: x+posx[b-1]*scale, 
+			y: y+posy[b-1]*scale, 
+			fontSize: '13pt', 
+			fontFamily: 'Verdana, sans-serif', 
+			align: 'left',
+			text: b, 
+			layer: true,
+			name: 'blackPieceText'
+		});
+	}
+	
+	// Draw white pieces (draggable)
+	for(var i=1; i<=3; i++) {
+		if (w[i] > 0) {
+			$('canvas').drawRect({
+				fillStyle: '#fff', 
+				x: x+posx[w[i]-1]*scale, 
+				y: y+posy[w[i]-1]*scale, 
+				width: 40, 
+				height: 40, 
+				layer: true,
+				draggable: true,
+				name: 'whitePiece_' + i,
+				data: {
+					pieceIndex: i,
+					originalNode: w[i],
+					boardX: x,
+					boardY: y,
+					scale: scale
+				},
+				dragstart: function(layer) {
+					draggedPiece = layer;
+					dragStartNode = layer.data.originalNode;
+					$(this).css('cursor', 'grabbing');
+					showValidMoves(dragStartNode, layer.data.boardX, layer.data.boardY, layer.data.scale);
+				},
+				drag: function(layer) {
+					// Visual feedback during drag - valid moves are already shown
+				},
+				dragstop: function(layer) {
+					// Hide valid move indicators
+					hideValidMoves();
+					
+					var dropNode = getNodeAtPosition(layer.x, layer.y, layer.data.boardX, layer.data.boardY, layer.data.scale);
+					
+					if (dropNode > 0 && dropNode != dragStartNode) {
+						// Attempt to make the move
+						if (moveIsValid(dragStartNode, dropNode)) {
+							updateMove(dragStartNode, dropNode);
+						} else {
+							// Invalid move - snap back to original position
+							layer.x = layer.data.boardX + posx[dragStartNode-1] * layer.data.scale;
+							layer.y = layer.data.boardY + posy[dragStartNode-1] * layer.data.scale;
+							$('canvas').drawLayers();
+							
+							$('canvas').drawText({
+								fillStyle: '#ff0000', 
+								strokeWidth: 2, 	
+								x: 380, 
+								y: 420, 
+								fontSize: '14pt', 
+								fontFamily: 'Verdana, sans-serif', 
+								align: 'left', 
+								layer: true,
+								name: 'errorMessage',
+								text: 'Invalid move! White can only move up, down, or right.',
+								click: function() {
+									$('canvas').removeLayer('errorMessage');
+									$('canvas').drawLayers();
+								}
+							});
+						}
+					} else {
+						// No valid drop target - snap back
+						layer.x = layer.data.boardX + posx[dragStartNode-1] * layer.data.scale;
+						layer.y = layer.data.boardY + posy[dragStartNode-1] * layer.data.scale;
+						$('canvas').drawLayers();
+					}
+					
+					draggedPiece = null;
+					dragStartNode = 0;
+					$(this).css('cursor', 'grab');
+				},
+				mouseover: function() {
+					$(this).css('cursor', 'grab');
+				},
+				mouseout: function() {
+					$(this).css('cursor', 'default');
+				}
+			});
+			
+			// Draw node number on top of white piece
+			$('canvas').drawText({
+				fillStyle: '#000', 
+				strokeWidth: 2, 	
+				x: x+posx[w[i]-1]*scale, 
+				y: y+posy[w[i]-1]*scale, 
+				fontSize: '13pt', 
+				fontFamily: 'Verdana, sans-serif', 
+				align: 'left',
+				text: w[i], 
+				layer: true,
+				name: 'whitePieceText_' + i
+			});
+		}
+	}
+}
+
+function getNodeAtPosition(x, y, boardX, boardY, scale) {
+	var threshold = 30; // Distance threshold for snapping to a node
+	
+	for(var i=1; i<=11; i++) {
+		var nodeX = boardX + posx[i-1] * scale;
+		var nodeY = boardY + posy[i-1] * scale;
+		
+		var distance = Math.sqrt(Math.pow(x - nodeX, 2) + Math.pow(y - nodeY, 2));
+		
+		if (distance < threshold) {
+			return i;
+		}
+	}
+	
+	return 0; // No node found
 }
 	
 
 function fnp(x) {
 	return Math.pow(2,x-1);
+}
+
+function showValidMoves(fromNode, boardX, boardY, scale) {
+	// Check each node to see if it's a valid move destination
+	for(var i=1; i<=11; i++) {
+		if (i != fromNode && isValidMoveDestination(fromNode, i)) {
+			// Draw dotted white rectangle at this position
+			$('canvas').drawRect({
+				strokeStyle: '#fff',
+				strokeWidth: 2,
+				strokeDash: [5, 5], // Creates dotted line pattern
+				x: boardX + posx[i-1] * scale,
+				y: boardY + posy[i-1] * scale,
+				width: 40,
+				height: 40,
+				layer: true,
+				name: 'validMove_' + i
+			});
+		}
+	}
+	$('canvas').drawLayers();
+}
+
+function hideValidMoves() {
+	// Remove all valid move indicators
+	for(var i=1; i<=11; i++) {
+		$('canvas').removeLayer('validMove_' + i);
+	}
+	$('canvas').drawLayers();
+}
+
+function isValidMoveDestination(fromNode, toNode) {
+	// Check if this would be a valid move without modifying game state
+	if (fromNode > 11 || toNode > 11 || fromNode < 1 || toNode < 1)
+		return false;
+	
+	// Check if target position is occupied
+	if (toNode == b || toNode == w[1] || toNode == w[2] || toNode == w[3]) 
+		return false;
+		
+	// Check if move is valid according to game rules
+	if (validMoves[fromNode][toNode] != 2)
+		return false;
+		
+	return true;
 }

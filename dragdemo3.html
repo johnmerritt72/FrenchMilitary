@@ -12,9 +12,9 @@ Drag and Drop Demo
 var canvas = $('#gameboard');
 var dots;
 let rectangles = [
-    { x: 50, y: 50, width: 100, height: 50, startX: 50, startY: 50 },
-    { x: 200, y: 50, width: 100, height: 50, startX: 200, startY: 50 },
-    { x: 350, y: 50, width: 100, height: 50, startX: 350, startY: 50 }
+    { x: 50, y: 50, width: 40, height: 40, startX: 50, startY: 50 },
+    { x: 200, y: 50, width: 40, height: 40, startX: 200, startY: 50 },
+    { x: 350, y: 50, width: 40, height: 40, startX: 350, startY: 50 }
 ];
 let isDragging = false;
 let draggedRect = null;
@@ -50,7 +50,7 @@ function getMousePos(canvas, evt) {
 
 
 function draw() {
-    canvas.clearCanvas();
+    // canvas.clearCanvas();
     rectangles.forEach(rect => {
         canvas.drawRect({
             fillStyle: 'blue',
@@ -58,6 +58,11 @@ function draw() {
             width: rect.width, height: rect.height,
             fromCenter: false,
 			draggable: true,
+			dragstart: function () {
+				// code to run when dragging starts
+				this.startX = this.x;
+				this.startY = this.y;
+			},
 			dragstop: function(layer) {
 				const dot = getDotInsideRect(this, dots);
 				if (dot) {
@@ -67,11 +72,15 @@ function draw() {
 					this.x = this.startX;
 					this.y = this.startY;
 				}
-            	//draw();
+				drawDots();
 			}
         });
     });
-    dots.forEach(dot => {
+	drawDots();
+}
+
+function drawDots() {
+	dots.forEach(dot => {
         canvas.drawArc({
             fillStyle: 'red',
             x: dot.x, y: dot.y,
